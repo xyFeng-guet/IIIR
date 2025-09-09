@@ -9,9 +9,9 @@ def get_args():
                         help='log path of train and test')
     parser.add_argument('--datasetName', type=str, default='emotake',
                         help='dataset name of use training')
-    parser.add_argument('--seed', type=int, default=111,
+    parser.add_argument('--seed', type=int, default=1111,
                         help='random seed')
-    parser.add_argument('--epochs', type=int, default=40,
+    parser.add_argument('--epochs', type=int, default=50,
                         help='train epochs')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='batch size of train input data')
@@ -21,14 +21,14 @@ def get_args():
                         help='optimizer learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='optimizer learning rate')
+    parser.add_argument('--test_para_flop_mac', action='store_false',
+                        help='test model parameters and flops')
 
     # Dataset
-    parser.add_argument('--labelType', type=str, default='ra',
+    parser.add_argument('--labelType', type=str, default='readiness',
                         help='label type is one of quality / readiness / ra')
-    parser.add_argument('--num_class', type=int, default=3,
+    parser.add_argument('--num_class', type=int, default=2,
                         help='quality:3, ra:3, readiness:2')
-    parser.add_argument('--data_path', type=str, default='ETTh1.csv',
-                        help='data file')
     parser.add_argument('--num_workers', type=int, default=1,
                         help='data loader num workers')
 

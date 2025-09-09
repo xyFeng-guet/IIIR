@@ -94,7 +94,7 @@ class LinearModel(nn.Module):
 
         joint_fea = torch.cat((uni_fea['au'], uni_fea['em'], uni_fea['hp'], uni_fea['bp']), dim=-1)
         output = self.cls_layer(joint_fea)
-        return output
+        return output, None, None
 
 
 class LSTMModel(nn.Module):
@@ -115,7 +115,7 @@ class LSTMModel(nn.Module):
         h_sent_out = final_h_c_out[0]
         h_sent_seq = torch.cat((h_sent_out[0], h_sent_out[1]), dim=-1)
         output = self.proj_last_state(h_sent_seq)
-        return output
+        return output, None, None
 
 
 def build_model(opt):

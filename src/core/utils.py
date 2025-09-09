@@ -3,12 +3,16 @@ import logging
 import random
 import numpy as np
 import torch
+import torch.nn.functional as F
 from tabulate import tabulate
 from scipy import stats
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import matplotlib.ticker as ticker
 import pandas as pd
+from sklearn import metrics
+from thop import profile, clever_format
+from fvcore.nn import FlopCountAnalysis, flop_count_table
 
 
 class AverageMeter(object):
@@ -232,3 +236,57 @@ def plot_tsne(data, fusion, path):
     ax = fig.add_subplot(1, 1, 1, projection='3d')
     data_visual(data_ts, label, path)
     fig.savefig('/opt/data/private/Project/Multi-TPER/data/t-sne-fusion-linear.png', dpi=600, bbox_inches='tight')
+
+
+def plot_roc(data, path):
+    y_true = data['label'].numpy()
+    y_scores = data['score']
+    # y_scores = F.softmax(y_scores, dim=1).numpy()
+    y_scores = F.softmax(y_scores, dim=1).detach().numpy()
+    y_posble = []
+    for i in range(y_scores.shape[0]):
+        y_posble.append(y_scores[i][y_true[i]])
+
+    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_posble)
+    roc_auc = metrics.auc(fpr, tpr)
+
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange',
+             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='gray', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic')
+    plt.legend(loc="lower right")
+    plt.savefig(os.path.join(path, 'ROC.png'))
+    plt.close()
+
+
+def calculate_model_pmf(model, data, device):
+    test_input = {
+        'au': data['au'][0:3].to(device),
+        'em': data['em'][0:3].to(device),
+        'hp': data['hp'][0:3].to(device),
+        'bp': data['bp'][0:3].to(device),
+        'padding_mask': {
+            'au': data['padding_mask_au'][0:3].to(device),
+            'em': data['padding_mask_em'][0:3].to(device),
+            'hp': data['padding_mask_hp'][0:3].to(device),
+            'bp': data['padding_mask_bp'][0:3].to(device)
+        },
+        'length': {
+            'au': data['au_lengths'][0:3].to(device),
+            'em': data['em_lengths'][0:3].to(device),
+            'hp': data['hp_lengths'][0:3].to(device),
+            'bp': data['bp_lengths'][0:3].to(device)
+        }
+    }
+    test_input1, test_input2 = test_input.copy(), test_input.copy()
+    macs, params = profile(model, inputs=(test_input1, ))
+    print("MACs=", str(macs/1e9) +'{}'.format("G"))
+    print("Params=", str(params/1e6)+'{}'.format("M"))
+    flops = FlopCountAnalysis(model, test_input2)
+    print("FLOPS=", str(flops.total()/1e9)+'{}'.format("s"))

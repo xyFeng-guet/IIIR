@@ -207,4 +207,4 @@ class iTransformer(nn.Module):
         if self.task_name == 'classification':
             dec_out = self.classification(x_enc)
             return dec_out, [], []  # [B, N]
-        return None
+        return None, None, None

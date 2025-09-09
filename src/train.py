@@ -7,7 +7,7 @@ from opts import get_args
 from core.dataset import create_Dataset, create_DataLoader
 from sklearn.model_selection import StratifiedKFold
 from core.scheduler import get_scheduler
-from core.utils import AverageMeter, setup_seed, ConfigLogging, save_print_results, calculate_u_test, plot_tsne
+from core.utils import AverageMeter, setup_seed, ConfigLogging, save_print_results, calculate_u_test, plot_tsne, plot_roc, calculate_model_pmf
 from models.OverallModal import build_model
 from core.metric import MetricsTop
 
@@ -54,6 +54,9 @@ def train(opt, model, dataset, optimizer, loss_fn, epoch, metrics):
         batchsize = inputs['au'].shape[0]
 
         output, _, _ = model(inputs)
+
+        if opt.test_para_flop_mac:  # 计算模型参数量和复杂度
+            calculate_model_pmf(model, data, device)
         # features = torch.mean(inputs['bp'], dim=1)
         # label = label[opt.labelType]
         # model.fit(features, label)
@@ -81,6 +84,8 @@ def train(opt, model, dataset, optimizer, loss_fn, epoch, metrics):
         })
 
     pred, true = torch.cat(y_pred), torch.cat(y_true)
+    # if epoch == 30:
+    #     plot_roc({'label': true, 'score': pred}, path='./Figure')
     train_results = metrics(pred, true)
 
     return train_results
@@ -141,10 +146,7 @@ def test(opt, model, dataset, optimizer, loss_fn, epoch, metrics):
             })
 
         pred, true = torch.cat(y_pred), torch.cat(y_true)
-        # if epoch == 11:
-        #     calculate_u_test(pred, true)
         test_results = metrics(pred, true)
-        # plot_tsne(data=input_tsne, fusion=input_fusion_tsne, path='')
 
     return test_results
 
@@ -152,7 +154,7 @@ def test(opt, model, dataset, optimizer, loss_fn, epoch, metrics):
 def main(parse_args):
     opt = parse_args
 
-    log_path = os.path.join(opt.log_path, opt.datasetName.upper())
+    log_path = os.path.join(opt.log_path, opt.datasetName.upper(), opt.labelType)
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_file = os.path.join(log_path, time.strftime('%Y-%m-%d-%H:%M:%S' + '.log'))
