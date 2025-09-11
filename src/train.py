@@ -7,7 +7,7 @@ from opts import get_args
 from core.dataset import create_Dataset, create_DataLoader
 from sklearn.model_selection import StratifiedKFold
 from core.scheduler import get_scheduler
-from core.utils import AverageMeter, setup_seed, ConfigLogging, save_print_results, calculate_u_test, plot_tsne, plot_roc, calculate_model_pmf
+from core.utils import AverageMeter, setup_seed, ConfigLogging, save_print_results, calculate_u_test, plot_tsne, plot_roc, calculate_model_pmf, cal_confusion_matrix
 from models.OverallModal import build_model
 from core.metric import MetricsTop
 
@@ -55,8 +55,8 @@ def train(opt, model, dataset, optimizer, loss_fn, epoch, metrics):
 
         output, _, _ = model(inputs)
 
-        if opt.test_para_flop_mac:  # 计算模型参数量和复杂度
-            calculate_model_pmf(model, data, device)
+        # if opt.test_para_flop_mac:  # 计算模型参数量和复杂度
+        #     calculate_model_pmf(model, data, device)
         # features = torch.mean(inputs['bp'], dim=1)
         # label = label[opt.labelType]
         # model.fit(features, label)
@@ -147,6 +147,8 @@ def test(opt, model, dataset, optimizer, loss_fn, epoch, metrics):
 
         pred, true = torch.cat(y_pred), torch.cat(y_true)
         test_results = metrics(pred, true)
+
+        cal_confusion_matrix(true, pred, task=opt.labelType, path='./Figure')
 
     return test_results
 

@@ -2,15 +2,17 @@ import os
 import logging
 import random
 import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import torch
 import torch.nn.functional as F
 from tabulate import tabulate
 from scipy import stats
-import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
-import matplotlib.ticker as ticker
-import pandas as pd
 from sklearn import metrics
+from sklearn.manifold import TSNE
+from sklearn.metrics import confusion_matrix
 from thop import profile, clever_format
 from fvcore.nn import FlopCountAnalysis, flop_count_table
 
@@ -267,21 +269,21 @@ def plot_roc(data, path):
 
 def calculate_model_pmf(model, data, device):
     test_input = {
-        'au': data['au'][0:3].to(device),
-        'em': data['em'][0:3].to(device),
-        'hp': data['hp'][0:3].to(device),
-        'bp': data['bp'][0:3].to(device),
+        'au': data['au'][0:2].to(device),
+        'em': data['em'][0:2].to(device),
+        'hp': data['hp'][0:2].to(device),
+        'bp': data['bp'][0:2].to(device),
         'padding_mask': {
-            'au': data['padding_mask_au'][0:3].to(device),
-            'em': data['padding_mask_em'][0:3].to(device),
-            'hp': data['padding_mask_hp'][0:3].to(device),
-            'bp': data['padding_mask_bp'][0:3].to(device)
+            'au': data['padding_mask_au'][0:2].to(device),
+            'em': data['padding_mask_em'][0:2].to(device),
+            'hp': data['padding_mask_hp'][0:2].to(device),
+            'bp': data['padding_mask_bp'][0:2].to(device)
         },
         'length': {
-            'au': data['au_lengths'][0:3].to(device),
-            'em': data['em_lengths'][0:3].to(device),
-            'hp': data['hp_lengths'][0:3].to(device),
-            'bp': data['bp_lengths'][0:3].to(device)
+            'au': data['au_lengths'][0:2].to(device),
+            'em': data['em_lengths'][0:2].to(device),
+            'hp': data['hp_lengths'][0:2].to(device),
+            'bp': data['bp_lengths'][0:2].to(device)
         }
     }
     test_input1, test_input2 = test_input.copy(), test_input.copy()
@@ -290,3 +292,22 @@ def calculate_model_pmf(model, data, device):
     print("Params=", str(params/1e6)+'{}'.format("M"))
     flops = FlopCountAnalysis(model, test_input2)
     print("FLOPS=", str(flops.total()/1e9)+'{}'.format("s"))
+
+
+def cal_confusion_matrix(y_true, y_pred, task, path):
+    labels = {
+        'quality': ['Worst', 'Medium', 'Perfect'],
+        'ra': ['Short', 'Medium', 'Long'],
+        'readiness': ['Ready', 'Not Ready']
+    }
+    cm = confusion_matrix(y_true, y_pred, labels=labels[task])
+    # cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] # 归一化
+    # df_cm = pd.DataFrame(cm, index=labels[task], columns=labels[task])    # 混淆矩阵的pandas格式
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='.2f', cmap='Blues', xticklabels=labels[task], yticklabels=labels[task])
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.title('Confusion Matrix')
+    plt.savefig(os.path.join(path, 'confusion_matrix.png'))
+    plt.close()

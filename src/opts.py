@@ -21,13 +21,13 @@ def get_args():
                         help='optimizer learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='optimizer learning rate')
-    parser.add_argument('--test_para_flop_mac', action='store_false',
+    parser.add_argument('--test_para_flop_mac', action='store_true',
                         help='test model parameters and flops')
 
     # Dataset
-    parser.add_argument('--labelType', type=str, default='readiness',
+    parser.add_argument('--labelType', type=str, default='quality',
                         help='label type is one of quality / readiness / ra')
-    parser.add_argument('--num_class', type=int, default=2,
+    parser.add_argument('--num_class', type=int, default=3,
                         help='quality:3, ra:3, readiness:2')
     parser.add_argument('--num_workers', type=int, default=1,
                         help='data loader num workers')
